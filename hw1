@@ -1,1 +1,480 @@
 https://paste.ofcode.org/LCvdu5TXg4cSmkiRztPFBh
+
+#include <iostream>
+using namespace std;
+
+
+// 一開始front = -1, rear = -1，rear會指在最後放進來的那格，front會在有東西的前一格
+// front == rear時代表queue為空
+class Queue
+{
+private:
+	int front, rear, size;
+
+	void newMemory(); //給兩倍記憶體
+public:
+	char* queue;
+
+	Queue();
+	Queue(int size);
+	bool isEmpty();
+	bool isFull();
+	void push(char input);
+	char pop();
+	char getFront();
+	void showQueue();
+};
+
+Queue::Queue()
+{
+	this->size = 100;
+	this->front = -1;
+	this->rear = -1;
+	this->queue = new char(100);
+}
+Queue::Queue(int size)
+{
+	this->size = size;
+	this->front = -1;
+	this->rear = -1;
+	this->queue = new char[size];
+}
+void Queue::newMemory()
+{
+	this->size *= 2;
+	char* newStack = new char[this->size];
+	//把現在的queue複製過去
+	for (int i = this->front + 1; i <= this->rear; i++)
+	{
+		newStack[i] = this->queue[i];
+	}
+	delete this->queue;
+	this->queue = newStack;
+	//cout << "現在queue大小: " << this->size << endl;
+}
+bool Queue::isEmpty()
+{
+	if (this->front == this->rear)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+bool Queue::isFull()
+{
+	if (this->rear == this->size - 1)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+void Queue::push(char input)
+{
+	if (this->isFull())
+	{
+		newMemory();
+	}
+	this->queue[this->rear + 1] = input;
+	this->rear++;
+}
+char Queue::pop()
+{
+	if (this->isEmpty())
+	{
+		//cout << "Error: the queue is empty." << endl;
+		return '\0';
+	}
+	this->front++;
+	return this->queue[this->front];
+}
+char Queue::getFront()
+{
+	if (this->isEmpty())
+	{
+		//cout << "Error: the queue is empty." << endl;
+		return '\0';
+	}
+	return this->queue[this->front + 1];
+}
+void Queue::showQueue()
+{
+	if (this->isEmpty())
+	{
+		cout << endl;
+		return;
+	}
+
+	for (int i = this->front + 1; i <= this->rear; i++)
+	{
+		cout << this->queue[i] << ' ';
+	}
+	cout << endl;
+}
+// ========================================================================================================
+// 一開始top = -1，top會指在最後放東西的那格
+// front == -1時代表stack為空
+class Stack
+{
+private:
+	int top, size;
+
+	void newMemory();	//直接新增兩倍記憶體
+public:
+	char* stack;
+
+	Stack();
+	Stack(int size);
+	bool isEmpty();
+	bool isFull();
+	void push(char input);
+	char pop();
+	char getTop();
+	void showStack();
+};
+
+Stack::Stack()
+{
+	this->size = 100;
+	this->top = -1;
+	this->stack = new char(100);
+}
+Stack::Stack(int size)
+{
+	this->size = size;
+	this->top = -1;
+	this->stack = new char[size];
+}
+void Stack::newMemory()
+{
+	this->size *= 2;
+	char* newStack = new char[this->size];
+	//把現在的stack複製過去
+	for (int i = 0; i <= this->top; i++)
+	{
+		newStack[i] = this->stack[i];
+	}
+	delete this->stack;
+	this->stack = newStack;
+	//cout << "現在stack大小: " << this->size << endl;
+}
+bool Stack::isEmpty()
+{
+	if (this->top == -1)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+bool Stack::isFull()
+{
+	if (this->top == this->size - 1)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+void Stack::push(char input)
+{
+	while (this->isFull())
+	{
+		this->newMemory();
+	}
+	this->top++;
+	this->stack[this->top] = input;
+}
+char Stack::pop()
+{
+	if (this->isEmpty())
+	{
+		//cout << "Error: the stack is empty." << endl;
+		return '\0';
+	}
+	this->top--;
+	return this->stack[this->top + 1];
+}
+char Stack::getTop()
+{
+	if (this->isEmpty())
+	{
+		//cout << "Error: the stack is empty." << endl;
+		return '\0';
+	}
+	return this->stack[this->top];
+}
+void Stack::showStack()
+{
+	if (this->isEmpty())
+	{
+		cout << endl;
+		return;
+	}
+
+	for (int i = 0; i <= this->top; i++)
+	{
+		cout << this->stack[i] << " ";
+	}
+	cout << endl;
+}
+// ========================================================================================================
+
+// 全域變數
+char map[105][105] = { '\0' };	//上限100*100，左下(1, 2)
+const int ROW_BEGIN = 1, COLUMN_BEGIN = 2;
+int column = 0, row = 0;
+Stack inventory(1);	//戰利品
+Queue bag(1);	//道具
+
+// digColumn傳進來就是map上面對應的index了
+// 右下角是(1, 2)
+void dig(int digColumn)
+{
+	int digRow = -1;
+	char item = '\0';
+	int t = -1;	//找到至少包含一個item的row(Lucky Clover用)
+
+	for (int i = row; i >= ROW_BEGIN; i--)
+	{
+		if (map[i][digColumn] == '\0' || map[i][digColumn] == '_')
+		{
+			continue;
+		}
+		item = map[i][digColumn];
+		digRow = i;
+		break;
+	}
+//consider the edge
+	switch (item)
+	{
+	case '_':
+		//do nothing
+		break;
+	case 'D':	//Diamond
+		inventory.push('D');
+		map[digRow][digColumn] = '_';
+		break;
+	case 'G':	//Gold
+		inventory.push('G');
+		map[digRow][digColumn] = '_';
+		break;
+	case 'B':	//Bomb
+		map[digRow][digColumn] = '_';
+		map[digRow][digColumn + 1] = '_';
+		map[digRow][digColumn - 1] = '_';
+		//map[digRow + 1][digColumn] = '_';
+		map[digRow + 1][digColumn - 1] = '_';
+		map[digRow + 1][digColumn + 1] = '_';
+		map[digRow - 1][digColumn] = '_';
+		map[digRow - 1][digColumn - 1] = '_';
+		map[digRow - 1][digColumn + 1] = '_';
+
+		break;
+	case 'F':	//Flashlight
+		bag.push('F');
+		map[digRow][digColumn] = '_';
+		break;
+	case 'M':	//Magent
+		bag.push('M');
+		map[digRow][digColumn] = '_';
+		break;
+	case 'C':	//Lucky Clover
+		map[digRow][digColumn] = '_';
+
+		//包包空的就不做事
+		if (inventory.getTop() == '\0')
+		{
+			return;
+		}
+
+		//找到t
+		for (int i = row; i >= ROW_BEGIN; i--)
+		{
+			for (int j = COLUMN_BEGIN; j < COLUMN_BEGIN + column; j++)
+			{
+				if (map[i][j] != '_')
+				{
+					t = i;
+					break;
+				}
+			}
+			if (t != -1)
+			{
+				break;
+			}
+		}
+
+		//擴充欄位
+		for (int i = t + 1; i <= t + 3; i++)
+		{
+			for (int j = COLUMN_BEGIN; j < COLUMN_BEGIN + column; j++)
+			{
+				map[i][j] = '_';
+			}
+		}
+		row = t + 3;
+
+		//放包包最上層的東西進地圖
+		for (int i = t + 1; i <= t + 3; i++)
+		{
+		    char tmp_ = inventory.getTop();
+			map[i][digColumn - 2] = tmp_;
+			map[i][digColumn - 1] = tmp_;
+			map[i][digColumn] = tmp_;
+			map[i][digColumn + 1] = tmp_;
+			map[i][digColumn + 2] = tmp_;
+		}
+		break;
+	case 'P':	//Pig
+		map[digRow][digColumn] = '_';
+		while (inventory.getTop() == 'G')
+		{
+			inventory.pop();
+		}
+		break;
+	}
+
+}
+
+// ========================================================================================================
+int main()
+{
+	int action = 0;	// user input: R, L, N
+	cin >> column >> row >> action;
+
+	// 輸入地圖
+	for (int i = row; i >= ROW_BEGIN; i--)
+	{
+		for (int j = COLUMN_BEGIN; j < COLUMN_BEGIN + column; j++)
+		{
+			char temp;
+			cin >> temp;
+			map[i][j] = temp;
+		}
+	}
+
+	//輸入指令
+	for (int i = 0; i < action; i++)
+	{
+		char order[10] = { '\0' };
+		int digColumn = -1;
+		char item;
+		cin >> order;
+		//DIG
+		if (order[0] == 'D' && order[1] == 'I' && order[2] == 'G')
+		{
+			cin >> digColumn;
+			digColumn += COLUMN_BEGIN;
+			dig(digColumn);
+		}
+		else if (order[0] == 'U' && order[1] == 'S' && order[2] == 'E')
+		{
+			item = bag.pop();
+			int mineLevel = -1;
+			switch (item)
+			{
+			case 'F':
+				for (int j = row; j >= ROW_BEGIN; j--)
+				{
+					for (int k = COLUMN_BEGIN; k < COLUMN_BEGIN + column; k++)
+					{
+						if (map[j][k] != '\0' && map[j][k] != '_')
+						{
+							mineLevel = j;
+							break;
+						}
+					}
+					if (mineLevel != -1)
+					{
+						break;
+					}
+				}
+
+                if(mineLevel == -1)
+                {
+                    cout<<"MINE LEVEL:"<<1<<endl;
+                    for(int j = COLUMN_BEGIN; j<COLUMN_BEGIN+column; j++)
+                        cout<<'_'<<' ';
+                    cout<<endl;
+                    break;
+                }
+				cout << "MINE LEVEL:" << mineLevel << endl;
+				for (int j = COLUMN_BEGIN; j < COLUMN_BEGIN + column; j++)
+				{
+					cout << map[mineLevel][j] << " ";
+				}
+				cout << endl;
+				break;
+			case 'M':
+				for (int j = COLUMN_BEGIN; j < COLUMN_BEGIN + column; j++)
+				{
+					dig(j);
+				}
+				break;
+			}
+
+		}
+		else
+		{
+			cout << "指令無效" << endl;
+		}
+
+
+		//// 測試用(每回合都輸出)==================================================
+		//cout << "現在包包: ";
+		//inventory.showStack();
+		//cout << "現在道具: ";
+		//bag.showQueue();
+
+		////show map
+		//cout << "現在地圖:" << endl;
+		//for (int j = row; j >= ROW_BEGIN; j--)
+		//{
+		//	for (int k = COLUMN_BEGIN; k < COLUMN_BEGIN + column; k++)
+		//	{
+		//		cout << map[j][k] << " ";
+		//	}
+		//	cout << endl;
+		//}
+		//cout << "=====================================" << endl;
+		////==================================================================
+	}
+
+	cout << "FINAL BAG:" << endl;
+	inventory.showStack();
+	cout << "FINAL MAP:" << endl;
+	int sum_ = 0;
+	for (int j = row; j >= ROW_BEGIN; j--)
+	{
+	    int tmp = 0;
+	    for(int k=COLUMN_BEGIN; k<COLUMN_BEGIN+column; k++)
+        {
+            if(map[j][k]!='_'&&map[j][k]!='\0')
+            {
+                tmp++;
+                sum_++;
+                break;
+            }
+        }
+        if(tmp!=0||sum_!=0)
+        {
+            for (int k = COLUMN_BEGIN; k < COLUMN_BEGIN + column; k++)
+            {
+                cout << map[j][k] << " ";
+            }
+            cout << endl;
+        }
+	}
+	if(sum_ == 0)cout<<endl;
+	return 0;
+}
