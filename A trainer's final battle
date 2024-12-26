@@ -1,0 +1,208 @@
+#include<iostream>
+#include<string>
+using namespace std;
+
+struct Node {
+    int idx, health, level;
+    Node *left, *right;
+    Node(int idx, int health):
+        idx(idx), health(health), level(1), 
+        left(nullptr), right(nullptr) {}
+};
+
+class List {
+private:
+    int n;
+    Node *target;
+public:
+    List(): n(0), target(nullptr) {}
+    void Insert(int idx, int damage, int health, string stance) {
+        if(stance == "Neutral") {
+            Node *node = new Node(idx, health);
+            if(n == 0) {
+                node->left = node;
+                node->right = node;
+                target = node;
+            }
+            else {
+                node->left = target->left;
+                node->right = target;
+                target->left->right = node;
+                target->left = node;
+            }
+            n++;
+        }
+        else if(stance == "Evolve") {
+            if(n >= 2 && target->level < 3 && target->left->level < 3 && \
+                idx == target->idx && idx == target->left->idx) {
+                health = max(health, max(target->health, target->left->health));
+                int level = max(target->level, target->left->level) + 1;
+                target = target->left;
+                Delete();
+                target->health = health;
+                target->level = level;
+            }
+            else {
+                Insert(idx, damage, health, "Neutral");
+            }
+        }
+        else if(stance == "Attack") {
+            if(n == 0) {
+                Insert(idx, damage, health, "Neutral");
+            }
+            else if(n == 1) {
+                Insert(idx, damage, health, "Neutral");
+                if(damage >= target->health) {
+                    Delete();
+                    target = target->left;
+                }
+                else {
+                    target->health -= damage;
+                }
+            }
+            else {
+                if(damage >= target->left->health) {
+                    target = target->left;
+                    Delete();
+                }
+                else {
+                    target->left->health -= damage;
+                }
+                Insert(idx, damage, health, "Neutral");
+                if(damage >= target->health) {
+                    Delete();
+                    target = target->left;
+                }
+                else {
+                    target->health -= damage;
+                }
+            }
+        }
+    }
+    void Delete() {
+        if(n == 0) return;
+        if(n == 1) {
+            delete target;
+            target = nullptr;
+        }
+        else {
+            Node *tmp = target;
+            target->left->right = target->right;
+            target->right->left = target->left;
+            target = target->right;
+            delete tmp;
+        }
+        n--;
+    }
+    void Shuffle(string dir, int num) {
+        num %= n;
+        if(num == 0) return;
+        Node *node = target;
+        if(dir == "c") {
+            while(num--) node = node->right;
+        }
+        else if(dir == "a") {
+            while(num--) node = node->left;
+        }
+        swap(target->idx, node->idx);
+        swap(target->health, node->health);
+        swap(target->level, node->level);
+        target = node;
+    }
+    void Check(int num) {
+        num = min(num, n);
+        int cnt[101]={};
+        cnt[target->idx]++;
+        Node *now = target, *new_target = nullptr;
+        for(int i = 0; i < num - 1; i++) {
+            now = now->right;
+            cnt[now->idx]++;
+        }
+        now = target;
+        for(int i = 0; i < num; i++) {
+            if(cnt[now->idx] > 1) {
+                target = now;
+                Delete();
+                now = target;
+            }
+            else {
+                if(new_target == nullptr) new_target = now;
+                now = now->right;
+            }
+        }
+        target = new_target?new_target:target;
+    }
+    void Reverse(int num) {
+        num = min(num, n);
+        Node *now = target, *head = nullptr;
+        for(int i = 0; i < n; i++) {
+            if(i == num - 1) target = now;
+            if(i % num == 0) {
+                head = now->left;
+                now = now->right;
+            }
+            else {
+                if(i == n - 1 && num == n) break; // special case: skip the last element when num == n
+                Node *l = now->left, *r = now->right;
+                now->left = head;
+                now->right = head->right;
+                head->right->left = now;
+                head->right = now;
+                l->right = r;
+                r->left = l;
+                now = r;
+            }
+        }
+    }
+    void Print() {
+        if(n == 0) {
+            cout << "no Poke Poke ;-;\n";
+            return;
+        }
+        cout << "ID: " << target->idx << " HP: " << target->health << " LVL: " << target->level << "\n";
+        Node *now = target->right;
+        while(now != target) {
+            cout << "ID: " << now->idx << " HP: " << now->health << " LVL: " << now->level << "\n";
+            now = now->right;
+        }
+    }
+};
+
+int main(void) {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    List list;
+    int n;
+    cin >> n;
+    while(n--) {
+        string cmd;
+        cin >> cmd;
+        if(cmd == "Insert") {
+            int idx, damage, health;
+            string stance;
+            cin >> idx >> damage >> health >> stance;
+            list.Insert(idx, damage, health, stance);
+        }
+        else if(cmd == "Delete") {
+            list.Delete();
+        }
+        else if(cmd == "Shuffle") {
+            string dir;
+            int num;
+            cin >> dir >> num;
+            list.Shuffle(dir, num);
+        }
+        else if(cmd == "Check") {
+            int num;
+            cin >> num;
+            list.Check(num);
+        }
+        else if(cmd == "Reverse") {
+            int num;
+            cin >> num;
+            list.Reverse(num);
+        }
+    }
+    list.Print();
+    return 0;
+}
