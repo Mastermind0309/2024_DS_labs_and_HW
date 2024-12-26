@@ -1,0 +1,152 @@
+#include <iostream>
+#include <string>
+#include <functional>
+using namespace std;
+
+struct Patient {
+    int idx;
+    string name;
+    int age;
+    int money;
+    int member;
+    string date;
+    Patient() {}
+    Patient(int idx, string& name, int age, int money, int member, string& date):
+        idx(idx), name(name), age(age), money(money), member(member), date(date) {}
+    bool operator==(const Patient& other) const {
+        return idx == other.idx;
+    }
+    bool operator!=(const Patient& other) const {
+        return !(*this == other);
+    }
+};
+
+bool comparePanda(const Patient& a, const Patient& b) {
+    if(a.member != b.member) return a.member < b.member;
+    else if(a.date != b.date) return a.date > b.date;
+    else if(a.name != b.name) return a.name > b.name;
+    else return a.idx > b.idx;
+}
+
+bool compareBear(const Patient& a, const Patient& b) {
+    if(a.money != b.money) return a.money < b.money;
+    else return a.idx > b.idx;
+}
+
+struct Node {
+    Patient p;
+    Node *left, *right;
+    Node(Patient& p): p(p), left(nullptr), right(nullptr) {}
+};
+
+class BST {
+private:
+    Node *root;
+    function<bool(const Patient&, const Patient&)> comp;
+public:
+    BST(function<bool(const Patient&, const Patient&)> comp): comp(comp) {
+        // Add a dummy node
+        int idx = -1, age = 0, money = 0, member = 0;
+        string name = string(10, 'z'), date = string(10, 'z');
+        Patient p = Patient(idx, name, age, money, member, date);
+        root = new Node(p);
+    }
+    bool isEmpty() {
+        return !root->left && !root->right;
+    }
+    Node* addNode(Patient p, bool pub = true, Node *now = nullptr) {
+        if(pub) now = root;
+        if(!now) return new Node(p);
+        else if(comp(p, now->p)) now->left = addNode(p, false, now->left);
+        else now->right = addNode(p, false, now->right);
+        return now;
+    }
+    Node* deleteNode(Patient p, bool pub = true, Node *now = nullptr) {
+        if(pub) now = root;
+        if(now->p != p) {
+            if(comp(p, now->p)) now->left = deleteNode(p, false, now->left);
+            else now->right = deleteNode(p, false, now->right);
+        }
+        else {
+            Node *tmp = now;
+            if(!now->left) {
+                now = now->right;
+                delete tmp;
+            }
+            else if(!now->right) {
+                now = now->left;
+                delete tmp;
+            }
+            else {
+                Node *r_min = getMinFromTree(now->right);
+                now->p = r_min->p;
+                now->right = deleteNode(r_min->p, false, now->right);
+            }
+        }
+        return now;
+    }
+    Node *getMinFromTree(Node *now) {
+        while(now->left) now = now->left;
+        return now;
+    }
+    Node* getMax() {
+        Node *res = root;
+        while(res->right) res = res->right;
+        return res;
+    }
+};
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+
+    int n, m;
+    int idx = 0, age, money, member;
+    string name, date;
+    BST P(comparePanda), B(compareBear);
+
+    std::cin >> n >> m;
+    for(int i = 0; i < n; i++) {
+        // Insert
+        cin.ignore();
+        getline(cin, name);
+        cin >> age >> money >> member >> date;
+        P.addNode(Patient(idx, name, age, money, member, date));
+        B.addNode(Patient(idx, name, age, money, member, date));
+        idx++;
+    }
+    for(int i = 0; i < m; i++) {
+        // Insert
+        int p, x, k;
+        cin >> p >> x >> k;
+        for(int j = 0; j < p; j++) {
+            cin.ignore();
+            getline(cin, name);
+            cin >> age >> money >> member >> date;
+            P.addNode(Patient(idx, name, age, money, member, date));
+            B.addNode(Patient(idx, name, age, money, member, date));
+            idx++;
+        }
+        // Panda
+        cout << "DAY #" << i+1 << "\n";
+        int total_money = 0;
+        for(int j = 0; j < x; j++) {
+            if(P.isEmpty()) break;
+            Patient now = P.getMax()->p;
+            cout << now.name << " " << now.age << "\n";
+            total_money += now.money;
+            B.deleteNode(now);
+            P.deleteNode(now);
+        }
+        cout << "INCOME TODAY: " << total_money/10*9 << "\n";
+        // Bear
+        for(int j = 0; j < k; j++) {
+            if(P.isEmpty()) break;
+            Patient now = B.getMax()->p;
+            B.deleteNode(now);
+            P.deleteNode(now);
+        }
+    }
+
+    return 0;
+}
