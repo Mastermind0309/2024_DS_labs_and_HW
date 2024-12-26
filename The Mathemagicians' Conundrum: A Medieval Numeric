@@ -1,0 +1,64 @@
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+// Merge function to count inversions and merge two halves
+long long merge_and_count(vector<int>& arr, int left, int mid, int right) {
+    vector<int> left_sub(arr.begin() + left, arr.begin() + mid + 1);
+    vector<int> right_sub(arr.begin() + mid + 1, arr.begin() + right + 1);
+
+    int i = 0, j = 0, k = left;
+    long long inv_count = 0;
+
+    while (i < left_sub.size() && j < right_sub.size()) 
+    {
+        if (left_sub[i] <= right_sub[j]) {
+            arr[k++] = left_sub[i++];
+        } else {
+            arr[k++] = right_sub[j++];
+            inv_count += (left_sub.size() - i); // Count inversions
+        }
+    }
+
+    while (i < left_sub.size()) {
+        arr[k++] = left_sub[i++];
+    }
+
+    while (j < right_sub.size()) {
+        arr[k++] = right_sub[j++];
+    }
+
+    return inv_count;
+}
+
+// Function to use merge sort and count inversions
+long long merge_sort_and_count(vector<int>& arr, int left, int right) {
+    long long inv_count = 0;
+    if (left < right) {
+        int mid = left + (right - left) / 2;
+
+        inv_count += merge_sort_and_count(arr, left, mid);
+        inv_count += merge_sort_and_count(arr, mid + 1, right);
+
+        inv_count += merge_and_count(arr, left, mid, right);
+    }
+    return inv_count;
+}
+
+int main() {
+    int n;
+    cin >> n;
+    vector<int> arr(n);
+
+    for (int i = 0; i < n; i++) {
+        cin >> arr[i];
+    }
+
+    // Counting inversions using merge sort
+    long long min_swaps = merge_sort_and_count(arr, 0, n - 1);
+
+    cout << min_swaps << endl;
+
+    return 0;
+}
