@@ -1,0 +1,168 @@
+#include <bits/stdc++.h>
+#define int long long
+using namespace std;
+
+struct Node {
+    int idx, dis, max_sum_of_path;
+    Node *parent;
+    unordered_map<int, Node*> child;
+    unordered_map<int, int> d_from_child;
+    set<pair<int, int>> d_from_child_set;
+    Node(int idx, int dis): idx(idx), dis(dis), parent(nullptr) {}
+};
+
+class Tree {
+private:
+    int n, root_idx;
+    unordered_map<int, Node*> nodes;
+    set<pair<int, int>> sum_of_path;
+    int dfs(int idx) {
+        for(auto [i, node] : nodes[idx]->child) {
+            nodes[idx]->d_from_child[i] = dfs(i);
+            nodes[idx]->d_from_child_set.insert({nodes[idx]->d_from_child[i], i});
+        }
+        return max(nodes[idx]->d_from_child_set.rbegin()->first, 0LL) + nodes[idx]->dis;
+    }
+public:
+    Tree(int n): n(n) {}
+    void Init() {
+        // Init root node
+        int p, c, d;
+        cin >> c >> d;
+        root_idx = c;
+        nodes[c] = new Node(c, d);
+        nodes[c]->d_from_child_set.insert({0, -1});
+        nodes[c]->d_from_child_set.insert({0, -2});
+        // Init other node
+        vector<vector<int>> edge(n-1, vector<int>(3));
+        for(auto& i : edge) {
+            cin >> i[0] >> i[1] >> i[2];
+            nodes[i[1]] = new Node(i[1], i[2]);
+            nodes[i[1]]->d_from_child_set.insert({0, -1});
+            nodes[i[1]]->d_from_child_set.insert({0, -2});
+        }
+        for(auto& i : edge) {
+            nodes[i[1]]->parent = nodes[i[0]];
+            nodes[i[0]]->child[i[1]] = nodes[i[1]];
+            nodes[i[0]]->d_from_child[i[1]] = 0;
+        }
+        // Dfs the tree
+        dfs(root_idx);
+        // Calculate the max sum of path for each node as root
+        for(auto [i, node] : nodes) {
+            auto it = node->d_from_child_set.rbegin();
+            int max1 = it->first;
+            int max2 = (++it)->first;
+            node->max_sum_of_path = node->dis + max1 + max2;
+            sum_of_path.insert({node->max_sum_of_path, i});
+        }
+    }
+    void Print() {
+        // for(auto [i, node] : nodes) {
+        //     cout << "#####\n";
+        //     cout << node->idx << " " << node->max_sum_of_path << "\n";
+        //     for(auto j : node->d_from_child_set) {
+        //         cout << j.first << " " << j.second << "\n";
+        //     }
+        // }
+        // cout << "\n";
+
+        auto it = sum_of_path.rbegin();
+        cout << "Final Root: " << it->second << "\n";
+    }
+    void Check() {
+        auto it = sum_of_path.rbegin();
+        cout << "Maximum Value: " << it->first << "\n";
+        cout << "Root of the Path: " << it->second << "\n";
+    }
+    void Add(int p, int c, int d) {
+        nodes[c] = new Node(c, d);
+        nodes[c]->d_from_child_set.insert({0, -1});
+        nodes[c]->d_from_child_set.insert({0, -2});
+        nodes[c]->parent = nodes[p];
+        nodes[c]->max_sum_of_path = d;
+        sum_of_path.insert({d, c});
+        nodes[p]->child[c] = nodes[c];
+        nodes[p]->d_from_child[c] = nodes[c]->dis;
+        nodes[p]->d_from_child_set.insert({nodes[c]->dis, c});
+        int now = p;
+        vector<int> update_node{now};
+        while(nodes[now]->parent) {
+            int origin_d = nodes[now]->parent->d_from_child[now];
+            nodes[now]->parent->d_from_child_set.erase({origin_d, now});
+            nodes[now]->parent->d_from_child[now] = max(nodes[now]->d_from_child_set.rbegin()->first, 0LL) + nodes[now]->dis;
+            nodes[now]->parent->d_from_child_set.insert({nodes[now]->parent->d_from_child[now], now});
+            now = nodes[now]->parent->idx;
+            update_node.push_back(now);
+        }
+        for(auto i : update_node) {
+            auto it = nodes[i]->d_from_child_set.rbegin();
+            int max1 = it->first;
+            int max2 = (++it)->first;
+            sum_of_path.erase({nodes[i]->max_sum_of_path, i});
+            nodes[i]->max_sum_of_path = nodes[i]->dis + max1 + max2;
+            sum_of_path.insert({nodes[i]->max_sum_of_path, i});
+        }
+    }
+    void Delete(int c) {
+        if(!nodes.count(c)) return;
+        for(auto [i, node]: nodes[c]->child) {
+            node->parent = nodes[c]->parent;
+            nodes[c]->parent->child[i] = node;
+            nodes[c]->parent->d_from_child[i] = nodes[c]->d_from_child[i];
+            nodes[c]->parent->d_from_child_set.insert({nodes[c]->d_from_child[i], i});
+        }
+        nodes[c]->parent->child.erase(c);
+        nodes[c]->parent->d_from_child_set.erase({nodes[c]->parent->d_from_child[c], c});
+        nodes[c]->parent->d_from_child.erase(c);
+        int now = nodes[c]->parent->idx;
+        vector<int> update_node{now};
+        while(nodes[now]->parent) {
+            int origin_d = nodes[now]->parent->d_from_child[now];
+            nodes[now]->parent->d_from_child_set.erase({origin_d, now});
+            nodes[now]->parent->d_from_child[now] = max(nodes[now]->d_from_child_set.rbegin()->first, 0LL) + nodes[now]->dis;
+            nodes[now]->parent->d_from_child_set.insert({nodes[now]->parent->d_from_child[now], now});
+            now = nodes[now]->parent->idx;
+            update_node.push_back(now);
+        }
+        for(auto i : update_node) {
+            auto it = nodes[i]->d_from_child_set.rbegin();
+            int max1 = it->first;
+            int max2 = (++it)->first;
+            sum_of_path.erase({nodes[i]->max_sum_of_path, i});
+            nodes[i]->max_sum_of_path = nodes[i]->dis + max1 + max2;
+            sum_of_path.insert({nodes[i]->max_sum_of_path, i});
+        }
+        sum_of_path.erase({nodes[c]->max_sum_of_path, c});
+        delete nodes[c];
+        nodes.erase(c);
+    }
+};
+
+signed main(void) {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    int n, o;
+    cin >> n >> o;
+    Tree tree(n+1);
+    tree.Init();
+    while(o--) {
+        string cmd;
+        cin >> cmd;
+        if(cmd == "Check") {
+            tree.Check();
+        }
+        else if(cmd == "Add") {
+            int p, c, d;
+            cin >> p >> c >> d;
+            tree.Add(p, c, d);
+        }
+        else if(cmd == "Delete") {
+            int c;
+            cin >> c;
+            tree.Delete(c);
+        }
+    }
+    tree.Print();
+    return 0;
+}
