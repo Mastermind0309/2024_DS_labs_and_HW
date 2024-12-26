@@ -1,0 +1,135 @@
+#include <iostream>
+#include <vector>
+#include <list>
+#include <string>
+using namespace std;
+
+struct Pokemon {
+    int id;
+    int level;
+    Pokemon(int id, int level) : id(id), level(level) {}
+};
+
+void show(const list<Pokemon>& arr) {
+    if (arr.empty()) {
+        cout << "Empty" << endl;
+    } else {
+        for (const auto& p : arr) {
+            cout << "ID: " << p.id << " Level: " << p.level << endl;
+        }
+    }
+}
+
+void Insert(list<Pokemon>& arr, int int2, int int3) {
+    arr.emplace_back(int2, int3);
+}
+
+void Remove(list<Pokemon>& arr, int int2) {
+    arr.remove_if([int2](const Pokemon& p) { return p.id == int2; });
+}
+
+void Rotate(list<Pokemon>& arr, int int2) {
+    if (arr.empty()) return;
+    int2 %= arr.size();
+    for (int i = 0; i < int2; ++i) {
+        arr.push_front(arr.back());
+        arr.pop_back();
+    }
+}
+
+void Reorder(list<Pokemon>& arr) {
+    list<Pokemon> even, odd;
+    int index = 0;
+    for (auto it = arr.begin(); it != arr.end(); ++it, ++index) {
+        if (index % 2 == 0) {
+            even.push_back(*it);
+        } else {
+            odd.push_back(*it);
+        }
+    }
+    arr.clear();
+    arr.splice(arr.end(), even);
+    arr.splice(arr.end(), odd);
+}
+
+void Reverse(list<Pokemon>& arr, int int2, int int3) {
+    auto start = next(arr.begin(), int2);
+    auto end = next(arr.begin(), int3 + 1);
+    list<Pokemon> sublist(start, end);
+    sublist.reverse();
+    auto it = start;
+    for (auto& p : sublist) {
+        *it = p;
+        ++it;
+    }
+}
+
+void Merge(list<Pokemon>& arr1, list<Pokemon>& arr2) {
+    list<Pokemon> merged;
+    auto it1 = arr1.begin();
+    auto it2 = arr2.begin();
+    while (it1 != arr1.end() && it2 != arr2.end()) {
+        if (it1->level < it2->level || (it1->level == it2->level && it1->id < it2->id)) {
+            merged.push_back(*it1);
+            ++it1;
+        } else {
+            merged.push_back(*it2);
+            ++it2;
+        }
+    }
+    while (it1 != arr1.end()) {
+        merged.push_back(*it1);
+        ++it1;
+    }
+    while (it2 != arr2.end()) {
+        merged.push_back(*it2);
+        ++it2;
+    }
+    arr1 = merged;
+    arr2.clear();
+}
+
+int main() {
+    int n;
+    cin >> n;
+    vector<list<Pokemon>> lists(n);
+
+    int x;
+    cin >> x;
+    while (x--) {
+        string command;
+        cin >> command;
+        if (command == "Insert") {
+            int int1, int2, int3;
+            cin >> int1 >> int2 >> int3;
+            Insert(lists[int1], int2, int3);
+        } else if (command == "Remove") {
+            int int1, int2;
+            cin >> int1 >> int2;
+            Remove(lists[int1], int2);
+        } else if (command == "Rotate") {
+            int int1, int2;
+            cin >> int1 >> int2;
+            Rotate(lists[int1], int2);
+        } else if (command == "Reorder") {
+            int int1;
+            cin >> int1;
+            Reorder(lists[int1]);
+        } else if (command == "Reverse") {
+            int int1, int2, int3;
+            cin >> int1 >> int2 >> int3;
+            Reverse(lists[int1], int2, int3);
+        } else if (command == "MergeListsPreserveOrder") {
+            int int1, int2;
+            cin >> int1 >> int2;
+            Merge(lists[int1], lists[int2]);
+        }
+    }
+
+    for (int i = 0; i < n; ++i) {
+        cout << "List " << i << endl;
+        show(lists[i]);
+    }
+
+    return 0;
+}
